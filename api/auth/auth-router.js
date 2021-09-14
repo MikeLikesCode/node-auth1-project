@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const Users = require('../users/users-model');
 const bcrypt = require('bcryptjs');
-const { restricted, checkUsernameFree } = require('../auth/auth-middleware');
+const { restricted, checkUsernameFree, checkPasswordLength, checkUsernameExists } = require('../auth/auth-middleware');
 
 // Require `checkUsernameFree`, `checkUsernameExists` and `checkPasswordLength`
 // middleware functions from `auth-middleware.js`. You will need them here!
@@ -29,7 +29,7 @@ const { restricted, checkUsernameFree } = require('../auth/auth-middleware');
   }
  */
 
-router.post('/register', checkUsernameFree, async (req, res, next) => {
+router.post('/register', checkUsernameFree, checkPasswordLength, async (req, res, next) => {
   try {
     const { username, password } = req.body;
     const hash = bcrypt.hashSync(password, 8);
@@ -62,13 +62,13 @@ router.post('/register', checkUsernameFree, async (req, res, next) => {
   }
  */
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', checkUsernameExists, async (req, res, next) => {
   try {
     const { username, password } = req.body;
     const [existingUser] = await Users.findBy({ username });
 
     if (existingUser && bcrypt.compareSync(password, existingUser.password)) {
-      req.session.user = existingUser;
+      req.session.chocolatechip = existingUser;
       res.json({
         message: `welcome ${existingUser.username}`
       })
@@ -99,9 +99,9 @@ router.post('/login', async (req, res, next) => {
   }
  */
 
-router.post('/logout', restricted, async (req, res, next) => {
+router.get('/logout', async (req, res, next) => {
   try {
-    if (req.session.user) {
+    if (req.session.chocolatechip) {
       req.session.destroy(err => {
         if (err) {
           res.json({
@@ -110,14 +110,14 @@ router.post('/logout', restricted, async (req, res, next) => {
         }
         else {
           res.json({
-            message: 'logged out'
+            status: 200, message: 'logged out'
           })
         }
       })
     }
     else {
       res.json({
-        message: "no session"
+        status: 200, message: "no session"
       })
     }
   }
